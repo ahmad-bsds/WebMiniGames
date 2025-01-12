@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Brain Teasers</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a1c2c, #4a1942);
+      padding: 20px;
+      color: white;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      color: #ffd700;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+    }
+
+    .difficulty-selector {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .difficulty-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .difficulty-btn.low {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .difficulty-btn.medium {
+      background: #FFA500;
+      color: white;
+    }
+
+    .difficulty-btn.high {
+      background: #FF4444;
+      color: white;
+    }
+
+    .difficulty-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    .difficulty-btn.active {
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(255,255,255,0.3);
+    }
+
+    .game-container {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 10px;
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .puzzle-area {
+      width: 100%;
+      max-width: 500px;
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      text-align: center;
+    }
+
+    .input-area {
+      width: 100%;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .input-area input {
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      width: 200px;
+      font-size: 16px;
+    }
+
+    .submit-btn {
+      padding: 10px 20px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .submit-btn:hover {
+      background: #45a049;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      color: #333;
+    }
+
+    .next-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .progress {
+      height: 100%;
+      background: #4CAF50;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .hint-text {
+      color: #FFA500;
+      margin-top: 10px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Brain Teasers</h1>
+      <p>Challenge your mind with puzzles!</p>
+    </div>
+
+    <div class="stats">
+      <div>Score: <span id="score">0</span></div>
+      <div>Level: <span id="level">1</span>/5</div>
+      <div>Time: <span id="timer">00:00</span></div>
+    </div>
+
+    <div class="difficulty-selector">
+      <button class="difficulty-btn low active" onclick="setDifficulty('low')">Easy</button>
+      <button class="difficulty-btn medium" onclick="setDifficulty('medium')">Medium</button>
+      <button class="difficulty-btn high" onclick="setDifficulty('high')">Hard</button>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress" id="progress"></div>
+    </div>
+
+    <div class="game-container">
+      <div class="puzzle-area" id="puzzle-area">
+        <!-- Puzzle content will be inserted here -->
+      </div>
+      <div class="hint-text" id="hint-text"></div>
+      <div class="input-area">
+        <input type="text" id="answer-input" placeholder="Your answer...">
+        <button class="submit-btn" id="submit-btn">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="success-modal">
+    <div class="modal-content">
+      <h2>Congratulations!</h2>
+      <p>You solved the puzzle!</p>
+      <p>Points earned: <span id="points-earned">0</span></p>
+      <button class="next-btn" onclick="nextPuzzle()">Next Puzzle</button>
+    </div>
+  </div>
+
+  <script>
+    const puzzles = {
+      low: [
+        {
+          question: "What comes next in the sequence: 2, 4, 6, 8, ?",
+          answer: "10",
+          hint: "Think about counting by 2s",
+          points: 10
+        },
+        {
+          question: "Unscramble this word: ELPPA",
+          answer: "APPLE",
+          hint: "It's a common fruit",
+          points: 10
+        },
+        {
+          question: "If you have 3 apples and get 2 more, how many do you have?",
+          answer: "5",
+          hint: "Use simple addition",
+          points: 10
+        },
+        {
+          question: "Complete the pattern: A1, B2, C3, ?",
+          answer: "D4",
+          hint: "Letters go A,B,C,D and numbers increase by 1",
+          points: 10
+        },
+        {
+          question: "What number comes before 100?",
+          answer: "99",
+          hint: "Count backwards from 100",
+          points: 10
+        }
+      ],
+      medium: [
+        {
+          question: "If a clock shows 3:00, what is the angle between the hour and minute hands?",
+          answer: "90",
+          hint: "Think about the degrees in a circle",
+          points: 20
+        },
+        {
+          question: "Solve: 25 × 4 ÷ 2 + 10 = ?",
+          answer: "60",
+          hint: "Remember order of operations",
+          points: 20
+        },
+        {
+          question: "What three numbers have the same answer when added together and multiplied together?",
+          answer: "1,2,3",
+          hint: "Try small numbers",
+          points: 20
+        },
+        {
+          question: "If you multiply this number by itself, you get the same digits in reverse. What's the number?",
+          answer: "9801",
+          hint: "It's a 4-digit number",
+          points: 20
+        },
+        {
+          question: "Complete the sequence: 1, 1, 2, 3, 5, 8, ?",
+          answer: "13",
+          hint: "Add the previous two numbers",
+          points: 20
+        }
+      ],
+      high: [
+        {
+          question: "Solve this riddle: I am not alive, but I grow; I don't have lungs, but I need air; I don't have a mouth, but water kills me. What am I?",
+          answer: "FIRE",
+          hint: "Think about elements",
+          points: 30
+        },
+        {
+          question: "If 5 cats catch 5 mice in 5 minutes, how many cats would it take to catch 100 mice in 100 minutes?",
+          answer: "5",
+          hint: "Think about the ratio",
+          points: 30
+        },
+        {
+          question: "What is the next letter in this sequence: O T T F F S S ?",
+          answer: "E",
+          hint: "Think about counting numbers spelled out",
+          points: 30
+        },
+        {
+          question: "A farmer has 17 sheep, all but 9 die. How many sheep are left?",
+          answer: "9",
+          hint: "Read carefully",
+          points: 30
+        },
+        {
+          question: "If you have a cube, how many different routes can you take to get from one corner to the opposite corner, only traveling along edges?",
+          answer: "6",
+          hint: "Think about the minimum number of edges you must traverse",
+          points: 30
+        }
+      ]
+    };
+
+    let currentDifficulty = 'low';
+    let currentLevel = 0;
+    let score = 0;
+    let startTime;
+    let timerInterval;
+
+    // Get DOM elements
+    const submitButton = document.getElementById('submit-btn');
+    const answerInput = document.getElementById('answer-input');
+    const hintText = document.getElementById('hint-text');
+    const successModal = document.getElementById('success-modal');
+
+    // Add event listeners
+    submitButton.addEventListener('click', checkAnswer);
+    answerInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        checkAnswer();
+      }
+    });
+
+    function setDifficulty(difficulty) {
+      if (difficulty === currentDifficulty) return;
+      
+      document.querySelectorAll('.difficulty-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelector(`.difficulty-btn.${difficulty}`).classList.add('active');
+      
+      currentDifficulty = difficulty;
+      currentLevel = 0;
+      updateProgress();
+      loadPuzzle();
+    }
+
+    function loadPuzzle() {
+      const puzzle = puzzles[currentDifficulty][currentLevel];
+      document.getElementById('puzzle-area').innerHTML = `
+        <h2>${puzzle.question}</h2>
+        <button onclick="showHint()" class="submit-btn" style="background: #FFA500;">Show Hint</button>
+      `;
+      answerInput.value = '';
+      document.getElementById('level').textContent = currentLevel + 1;
+      hintText.style.display = 'none';
+      
+      // Reset and start timer
+      clearInterval(timerInterval);
+      startTime = new Date();
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function updateTimer() {
+      const now = new Date();
+      const diff = Math.floor((now - startTime) / 1000);
+      const minutes = Math.floor(diff / 60).toString().padStart(2, '0');
+      const seconds = (diff % 60).toString().padStart(2, '0');
+      document.getElementById('timer').textContent = `${minutes}:${seconds}`;
+    }
+
+    function showHint() {
+      const puzzle = puzzles[currentDifficulty][currentLevel];
+      hintText.textContent = `Hint: ${puzzle.hint}`;
+      hintText.style.display = 'block';
+    }
+
+    function checkAnswer() {
+      const userAnswer = answerInput.value.trim().toUpperCase();
+      const puzzle = puzzles[currentDifficulty][currentLevel];
+      
+      if (userAnswer === puzzle.answer.toUpperCase()) {
+        score += puzzle.points;
+        document.getElementById('score').textContent = score;
+        document.getElementById('points-earned').textContent = puzzle.points;
+        successModal.style.display = 'flex';
+      } else {
+        alert('Try again!');
+      }
+    }
+
+    function nextPuzzle() {
+      successModal.style.display = 'none';
+      currentLevel++;
+      
+      if (currentLevel >= puzzles[currentDifficulty].length) {
+        alert('Congratulations! You\'ve completed all puzzles in this difficulty level!');
+        currentLevel = 0;
+      }
+      
+      updateProgress();
+      loadPuzzle();
+    }
+
+    function updateProgress() {
+      const progress = (currentLevel / puzzles[currentDifficulty].length) * 100;
+      document.getElementById('progress').style.width = `${progress}%`;
+    }
+
+    // Initialize the game
+    loadPuzzle();
+  </script>
+</body>
+</html>

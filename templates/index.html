@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Portal</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-indigo-600 text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <h1 class="text-2xl font-bold">Game Portal</h1>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-6 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Bubble Shooter Card -->
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-300 hover:scale-105">
+                <div class="h-48 bg-gradient-to-r from-purple-500 to-pink-500"></div>
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Bubble Shooter</h2>
+                    <p class="text-gray-600 mb-4">Pop colorful bubbles and clear the board in this addictive puzzle game!</p>
+                    <a href="{{ url_for('bubble_shooter') }}"
+                       class="inline-block bg-purple-500 text-white px-6 py-2 rounded-lg hover:bg-purple-600 transition duration-300">
+                        Play Now
+                    </a>
+                </div>
+            </div>
+
+            <!-- Word Puzzle Card -->
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-300 hover:scale-105">
+                <div class="h-48 bg-gradient-to-r from-blue-500 to-teal-500"></div>
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Word Puzzle</h2>
+                    <p class="text-gray-600 mb-4">Challenge your vocabulary and solve engaging word puzzles!</p>
+                    <a href="{{ url_for('word_puzzle') }}"
+                       class="inline-block bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition duration-300">
+                        Play Now
+                    </a>
+                </div>
+            </div>
+
+            <!-- Sliding Puzzle Card -->
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden transform transition duration-300 hover:scale-105">
+                <div class="h-48 bg-gradient-to-r from-green-500 to-emerald-500"></div>
+                <div class="p-6">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Sliding Puzzle</h2>
+                    <p class="text-gray-600 mb-4">Slide tiles to solve the puzzle and train your brain!</p>
+                    <a href="{{ url_for('sliding_puzzle') }}"
+                       class="inline-block bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition duration-300">
+                        Play Now
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-12">
+        <div class="container mx-auto px-6 py-4 text-center">
+            <p>&copy; 2025 Game Portal. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #6C63FF, #FF6584);
+            font-family: Arial, sans-serif;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .puzzle-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            background: #333;
+            padding: 5px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .tile {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+            border-radius: 5px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .tile:hover {
+            transform: scale(1.05);
+        }
+
+        .tile.highlight {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 255, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 255, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 255, 0, 0); }
+        }
+
+        .empty {
+            background: #333 !important;
+            cursor: default;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #6C63FF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5650d8;
+        }
+
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .power-ups {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(108, 99, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .power-up {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .moves {
+            font-size: 18px;
+            margin: 15px 0;
+            color: #333;
+        }
+
+        .win-message {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            z-index: 100;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+        }
+
+        .swap-mode .tile:not(.empty):hover {
+            box-shadow: 0 0 15px #FFD700;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Sliding Puzzle</h1>
+        <div class="moves">Moves: <span id="moveCount">0</span></div>
+        <div class="power-ups">
+            <div class="power-up">
+                <span>Hints Left: </span>
+                <span id="hintCount">3</span>
+                <button onclick="useHint()" id="hintButton">Get Hint</button>
+            </div>
+            <div class="power-up">
+                <span>Swaps Left: </span>
+                <span id="swapCount">1</span>
+                <button onclick="toggleSwapMode()" id="swapButton">Swap Tiles</button>
+            </div>
+        </div>
+        <div class="puzzle-board" id="puzzleBoard"></div>
+        <div class="controls">
+            <button onclick="shufflePuzzle()">Shuffle</button>
+            <button onclick="newGame()">New Game</button>
+        </div>
+    </div>
+    <div class="overlay" id="overlay"></div>
+    <div class="win-message" id="winMessage">
+        <h2>Congratulations! 🎉</h2>
+        <p>You solved the puzzle in <span id="finalMoves">0</span> moves!</p>
+        <button onclick="newGame()">Play Again</button>
+    </div>
+
+    <script>
+        const board = document.getElementById('puzzleBoard');
+        const moveCountDisplay = document.getElementById('moveCount');
+        const winMessage = document.getElementById('winMessage');
+        const overlay = document.getElementById('overlay');
+        const finalMovesDisplay = document.getElementById('finalMoves');
+        const hintCountDisplay = document.getElementById('hintCount');
+        const swapCountDisplay = document.getElementById('swapCount');
+
+        let tiles = [];
+        let emptyTile = 15;
+        let moveCount = 0;
+        let size = 4;
+        let hintsLeft = 3;
+        let swapsLeft = 1;
+        let swapMode = false;
+        let firstSwapTile = null;
+
+        function createTile(number, index) {
+            const tile = document.createElement('div');
+            tile.className = 'tile';
+            if (number === size * size) {
+                tile.classList.add('empty');
+            } else {
+                const hue1 = (number * 25) % 360;
+                const hue2 = ((number * 25) + 40) % 360;
+                tile.style.background = `linear-gradient(45deg,
+                    hsl(${hue1}, 70%, 50%),
+                    hsl(${hue2}, 70%, 50%))`;
+                tile.textContent = number;
+            }
+            tile.dataset.index = index;
+            tile.addEventListener('click', () => handleTileClick(index));
+            return tile;
+        }
+
+        function handleTileClick(index) {
+            if (swapMode) {
+                handleSwapClick(index);
+            } else {
+                moveTile(index);
+            }
+        }
+
+        function handleSwapClick(index) {
+            const tiles = board.children;
+            if (tiles[index].classList.contains('empty')) return;
+
+            if (firstSwapTile === null) {
+                firstSwapTile = index;
+                tiles[index].style.boxShadow = '0 0 15px #FFD700';
+            } else {
+                if (firstSwapTile !== index) {
+                    swapTiles(firstSwapTile, index);
+                    swapsLeft--;
+                    swapCountDisplay.textContent = swapsLeft;
+                    moveCount += 2; // Count as two moves
+                    moveCountDisplay.textContent = moveCount;
+                }
+                exitSwapMode();
+            }
+        }
+
+        function swapTiles(index1, index2) {
+            const tiles = board.children;
+            const temp = {
+                text: tiles[index1].textContent,
+                background: tiles[index1].style.background
+            };
+
+            tiles[index1].textContent = tiles[index2].textContent;
+            tiles[index1].style.background = tiles[index2].style.background;
+
+            tiles[index2].textContent = temp.text;
+            tiles[index2].style.background = temp.background;
+
+            if (checkWin()) {
+                showWinMessage();
+            }
+        }
+
+        function toggleSwapMode() {
+            if (swapsLeft <= 0) return;
+
+            swapMode = !swapMode;
+            board.classList.toggle('swap-mode');
+            const swapButton = document.getElementById('swapButton');
+            swapButton.textContent = swapMode ? 'Cancel Swap' : 'Swap Tiles';
+
+            if (!swapMode) {
+                exitSwapMode();
+            }
+        }
+
+        function exitSwapMode() {
+            swapMode = false;
+            board.classList.remove('swap-mode');
+            firstSwapTile = null;
+            const swapButton = document.getElementById('swapButton');
+            swapButton.textContent = 'Swap Tiles';
+            // Remove any highlighting
+            Array.from(board.children).forEach(tile => {
+                tile.style.boxShadow = '';
+            });
+        }
+
+        function useHint() {
+            if (hintsLeft <= 0) return;
+
+            // Find the next tile that should be moved
+            const tiles = board.children;
+            let hintTile = null;
+
+            // Simple hint strategy: find the first tile that's not in its correct position
+            for (let i = 0; i < tiles.length; i++) {
+                const currentNumber = parseInt(tiles[i].textContent);
+                if (!tiles[i].classList.contains('empty') && currentNumber !== i + 1) {
+                    hintTile = tiles[i];
+                    break;
+                }
+            }
+
+            if (hintTile) {
+                // Highlight the suggested tile
+                Array.from(tiles).forEach(tile => tile.classList.remove('highlight'));
+                hintTile.classList.add('highlight');
+
+                // Remove highlight after 2 seconds
+                setTimeout(() => {
+                    hintTile.classList.remove('highlight');
+                }, 2000);
+
+                hintsLeft--;
+                hintCountDisplay.textContent = hintsLeft;
+            }
+        }
+
+        function initializeBoard() {
+            board.innerHTML = '';
+            tiles = Array.from({length: size * size}, (_, i) => i + 1);
+            tiles.forEach((number, index) => {
+                board.appendChild(createTile(number, index));
+            });
+        }
+
+        function moveTile(index) {
+            if (isAdjacent(index, emptyTile)) {
+                const tiles = board.children;
+                const temp = tiles[index].textContent;
+                const tempBackground = tiles[index].style.background;
+
+                tiles[emptyTile].textContent = temp;
+                tiles[emptyTile].style.background = tempBackground;
+                tiles[emptyTile].classList.remove('empty');
+
+                tiles[index].textContent = '';
+                tiles[index].style.background = '';
+                tiles[index].classList.add('empty');
+
+                emptyTile = index;
+                moveCount++;
+                moveCountDisplay.textContent = moveCount;
+
+                if (checkWin()) {
+                    showWinMessage();
+                }
+            }
+        }
+
+        function isAdjacent(index1, index2) {
+            const row1 = Math.floor(index1 / size);
+            const col1 = index1 % size;
+            const row2 = Math.floor(index2 / size);
+            const col2 = index2 % size;
+
+            return Math.abs(row1 - row2) + Math.abs(col1 - col2) === 1;
+        }
+
+        function checkWin() {
+            const tiles = board.children;
+            for (let i = 0; i < tiles.length - 1; i++) {
+                if (!tiles[i].textContent || parseInt(tiles[i].textContent) !== i + 1) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function shufflePuzzle() {
+            for (let i = 0; i < 200; i++) {
+                const possibleMoves = [];
+                const tiles = board.children;
+
+                for (let j = 0; j < tiles.length; j++) {
+                    if (isAdjacent(j, emptyTile)) {
+                        possibleMoves.push(j);
+                    }
+                }
+
+                const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                moveTile(randomMove);
+            }
+
+            moveCount = 0;
+            moveCountDisplay.textContent = moveCount;
+        }
+
+        function showWinMessage() {
+            winMessage.style.display = 'block';
+            overlay.style.display = 'block';
+            finalMovesDisplay.textContent = moveCount;
+        }
+
+        function newGame() {
+            initializeBoard();
+            shufflePuzzle();
+            winMessage.style.display = 'none';
+            overlay.style.display = 'none';
+            moveCount = 0;
+            moveCountDisplay.textContent = moveCount;
+            hintsLeft = 3;
+            swapsLeft = 1;
+            hintCountDisplay.textContent = hintsLeft;
+            swapCountDisplay.textContent = swapsLeft;
+            exitSwapMode();
+        }
+
+        // Initialize the game
+        newGame();
+    </script>
+</body>
+</html>

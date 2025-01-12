@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bubble Pop</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .header {
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    .game-stats {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      padding: 15px;
+      background: #f0f0f0;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .stat-item {
+      font-size: 1.2em;
+      padding: 5px 15px;
+      background: white;
+      border-radius: 5px;
+    }
+
+    .game-area {
+      position: relative;
+      width: 400px;
+      margin: 0 auto;
+    }
+
+    #game-canvas {
+      background: white;
+      border: 2px solid #eee;
+      border-radius: 10px;
+      cursor: crosshair;
+    }
+
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1.1em;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .primary-btn {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .secondary-btn {
+      background: #ff9800;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Bubble Pop</h1>
+      <p>Match colors and clear the board!</p>
+    </div>
+
+    <div class="game-stats">
+      <div class="stat-item">Score: <span id="score">0</span></div>
+      <div class="stat-item">Level: <span id="level">1</span></div>
+      <div class="stat-item">Shots: <span id="shots">10</span></div>
+    </div>
+
+    <div class="game-area">
+      <canvas id="game-canvas" width="400" height="500"></canvas>
+    </div>
+
+    <div class="controls">
+      <button class="primary-btn" onclick="restartGame()">New Game</button>
+      <button class="secondary-btn" onclick="showTutorial()">How to Play</button>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const COLORS = ['#FF4444', '#4CAF50', '#2196F3', '#FFC107'];
+    const BUBBLE_SIZE = 30;
+    const GRID_ROWS = 8;
+    const GRID_COLS = 10;
+
+    let score = 0;
+    let level = 1;
+    let shots = 10;
+    let gameGrid = [];
+    let currentBubble = null;
+    let isAnimating = false;
+
+    function initGame() {
+      score = 0;
+      level = 1;
+      shots = 10;
+      updateStats();
+      createGrid();
+      createNewBubble();
+      draw();
+    }
+
+    function createGrid() {
+      gameGrid = [];
+      for (let row = 0; row < GRID_ROWS; row++) {
+        gameGrid[row] = [];
+        for (let col = 0; col < GRID_COLS; col++) {
+          if (row < 3) {
+            gameGrid[row][col] = {
+              color: COLORS[Math.floor(Math.random() * COLORS.length)],
+              x: col * BUBBLE_SIZE + BUBBLE_SIZE/2,
+              y: row * BUBBLE_SIZE + BUBBLE_SIZE/2
+            };
+          } else {
+            gameGrid[row][col] = null;
+          }
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw grid
+      for (let row = 0; row < GRID_ROWS; row++) {
+        for (let col = 0; col < GRID_COLS; col++) {
+          if (gameGrid[row][col]) {
+            drawBubble(
+              col * BUBBLE_SIZE + BUBBLE_SIZE/2,
+              row * BUBBLE_SIZE + BUBBLE_SIZE/2,
+              gameGrid[row][col].color
+            );
+          }
+        }
+      }
+
+      // Draw shooting area
+      ctx.fillStyle = '#f5f5f5';
+      ctx.fillRect(0, canvas.height - 30, canvas.width, 60);
+
+      // Draw current bubble
+      if (currentBubble && !isAnimating) {
+        drawBubble(canvas.width/2, canvas.height - 30, currentBubble.color);
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    function drawBubble(x, y, color) {
+      ctx.beginPath();
+      ctx.arc(x, y, BUBBLE_SIZE/2 - 2, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function createNewBubble() {
+      currentBubble = {
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        x: canvas.width/2,
+        y: canvas.height - 20
+      };
+    }
+
+    function shootBubble(event) {
+      if (isAnimating || shots <= 0) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = event.clientX - rect.left;
+      const mouseY = event.clientY - rect.top;
+
+      const angle = Math.atan2(mouseY - (canvas.height - 30), mouseX - canvas.width/2);
+      const speed = 8;
+      
+      isAnimating = true;
+      const bubble = {
+        x: canvas.width/2,
+        y: canvas.height - 30,
+        dx: Math.cos(angle) * speed,
+        dy: Math.sin(angle) * speed,
+        color: currentBubble.color
+      };
+
+      animateBubble(bubble);
+      shots--;
+      updateStats();
+    }
+
+    function animateBubble(bubble) {
+      bubble.x += bubble.dx;
+      bubble.y += bubble.dy;
+
+      drawBubble(bubble.x, bubble.y, bubble.color);
+
+      // Wall collision
+      if (bubble.x <= BUBBLE_SIZE/2 || bubble.x >= canvas.width - BUBBLE_SIZE/2) {
+        bubble.dx *= -1;
+      }
+
+      // Grid collision
+      const col = Math.floor(bubble.x / BUBBLE_SIZE);
+      const row = Math.floor(bubble.y / BUBBLE_SIZE);
+      
+      if (row >= 0 && row < GRID_ROWS && col >= 0 && col < GRID_COLS) {
+        if (gameGrid[row][col] || row === 0) {
+          placeInGrid(bubble, row, col);
+          return;
+        }
+      }
+
+      requestAnimationFrame(() => animateBubble(bubble));
+    }
+
+    function placeInGrid(bubble, row, col) {
+      // Find the closest empty spot
+      if (gameGrid[row][col]) {
+        row = row + 1;
+      }
+
+      if (row < GRID_ROWS && col >= 0 && col < GRID_COLS) {
+        gameGrid[row][col] = {
+          color: bubble.color,
+          x: col * BUBBLE_SIZE + BUBBLE_SIZE/2,
+          y: row * BUBBLE_SIZE + BUBBLE_SIZE/2
+        };
+
+        checkMatches(row, col);
+        
+        if (shots <= 0) {
+          setTimeout(() => {
+            alert('Game Over! Score: ' + score);
+            restartGame();
+          }, 500);
+        }
+      }
+
+      isAnimating = false;
+      createNewBubble();
+    }
+
+    function checkMatches(row, col) {
+      const color = gameGrid[row][col].color;
+      const matches = findMatches(row, col, color, new Set());
+      
+      if (matches.size >= 3) {
+        matches.forEach(pos => {
+          const [r, c] = pos.split(',').map(Number);
+          gameGrid[r][c] = null;
+          score += 10;
+        });
+        updateStats();
+        
+        if (checkWin()) {
+          nextLevel();
+        }
+      }
+    }
+
+    function findMatches(row, col, color, matches) {
+      const key = `${row},${col}`;
+      if (matches.has(key)) return matches;
+      
+      if (!gameGrid[row]?.[col] || gameGrid[row][col].color !== color) return matches;
+      
+      matches.add(key);
+      
+      // Check adjacent positions
+      [[-1,0], [-1,0], [0,-1], [0,1]].forEach(([dr, dc]) => {
+        findMatches(row + dr, col + dc, color, matches);
+      });
+      
+      return matches;
+    }
+
+    function checkWin() {
+      return gameGrid.every(row => row.every(bubble => !bubble));
+    }
+
+    function nextLevel() {
+      level++;
+      shots = 10 + level;
+      createGrid();
+      createNewBubble();
+      updateStats();
+      alert('Level ' + level + '! Extra shots added!');
+    }
+
+    function updateStats() {
+      document.getElementById('score').textContent = score;
+      document.getElementById('level').textContent = level;
+      document.getElementById('shots').textContent = shots;
+    }
+
+    function restartGame() {
+      initGame();
+    }
+
+    function showTutorial() {
+      alert('Click to shoot bubbles! Match 3 or more of the same color to pop them. Clear the board to advance to the next level!');
+    }
+
+    canvas.addEventListener('click', shootBubble);
+    initGame();
+  </script>
+</body>
+</html>
